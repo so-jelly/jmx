@@ -1,12 +1,24 @@
 version: "3.5"
 services:
+
+  traefik:
+    image: traefik
+    container_name: traefik
+    command:
+      - --providers.docker=true
+      - --entrypoints.tcp.address=:6660
+    ports:
+      - 6660:6660
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   jmx:
     build:
       context: .
     image: jmx-test
-    # environment:
-    #   JAVA_OPTS: -Dcom.sun.management.jmxremote.port=6660 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false
-    ports:
-      - 6660:6660
     volumes:
       - ./entrypoint.sh:/app/entrypoint.sh
+    labels:
+      - traefik.enable=true
+      - traefik.tcp.routers.jmx-tcp.rule=HostSNI(`*`)
+      - traefik.tcp.services.jmx-proxy.loadbalancer.server.port=6660
